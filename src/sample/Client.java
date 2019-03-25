@@ -131,7 +131,7 @@ public class Client {
                System.out.println(user.getUsername() + " is not logged in");
                break;
             }
-         case "3": //Downloads
+         /*case "3": //Downloads
             System.out.println("You want to download");
             LoggedInUsers.AddToList(new User("AoifeSayers", "Hi"));
             LoggedInUsers.getLoggedInUsers();
@@ -150,7 +150,7 @@ public class Client {
             serverResult = download(username, fileName, saveFileAs);
             System.out.println(serverResult);
 
-            break;
+            break;*/
          case "4": //Quit
             System.out.println("Quitting!");
             helper.done();
@@ -190,7 +190,7 @@ public class Client {
    }
    public static String login(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String message = "1" + ", " + username + ", " + password;
+      String message = String.valueOf(ProtocolCode.LOGIN) + ", " + username + ", " + password;
       String serverResult = helper.send(message);
       return serverResult;
    }

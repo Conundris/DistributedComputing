@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * This module contains the application logic of an ftp server
@@ -31,9 +32,12 @@ download success
 download unsuccessful
  */
 public class Server {
+    private static List<User> listOfAllUsers = new ArrayList<>();
+
     public static void main(String[] args) {
         final int DEFAULTSERVERPORT = 3000;
 
+        populateUsers();
 
         String messageCode;
         String username;
@@ -64,7 +68,6 @@ public class Server {
                 username = username.trim();
                 password = password.trim();
 
-                login("admin","password");
                 //Determine which type of message & invoke different methods
                 //1 Login,  2 Logout, 3 upload, 4 download, 5. register
                 switch (messageCode) {
@@ -143,6 +146,28 @@ public class Server {
         } // end catch
     } //end main
 
+    private static void populateUsers() {
+        final String workingDir = System.getProperty("user.dir");
+        final String usersFile = workingDir + "\\users\\Users.txt";
+        System.out.println("current dir = " + workingDir);
+
+        try {
+            Scanner scanner = new Scanner(new File(usersFile));
+            while (scanner.hasNextLine()) {
+
+                String[] splitMessage = scanner.nextLine().split(",");
+                User user = new User();
+                user.setUsername(splitMessage[0].trim());
+                user.setPassword(splitMessage[1].trim());
+
+                listOfAllUsers.add(user);
+            }
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static String checkIfLoggedIn(String username){
        Boolean isLoggedIn =  LoggedInUsers.isLoggedIn(username);
         System.out.println(isLoggedIn);
@@ -162,17 +187,13 @@ public class Server {
     }
 
     public static String login(String username, String password) {
-        //TODO: NEW METHOD
-        List<User> listOfAllUsers = new ArrayList<>();
-        String FILENAME = "C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\Users.txt";
-
-
-        BufferedReader br = null;
+        String serverResponse = "";
+        /*BufferedReader br = null;
         BufferedReader bRead;
         FileReader fr = null;
-        String serverResponse = "";
+
         try {
-            fr = new FileReader(FILENAME);
+            fr = new FileReader("");
             br = new BufferedReader(fr);
             InputStreamReader is = new InputStreamReader(System.in);
             bRead = new BufferedReader(is);
@@ -185,21 +206,16 @@ public class Server {
                 uname = uname.trim();
                 pass = splitMessage[1];
                 pass = pass.trim();
-                listOfAllUsers.add(new User((String) uname, (String) pass));
-            }
-            serverResponse = findUsers(listOfAllUsers, username, password);
-            System.out.println(serverResponse);
-            br.close();
-            fr.close();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+                //listOfAllUsers.add(new User((String) uname, (String) pass));
+            }*/
+        serverResponse = findUsers(username, password);
+        System.out.println(serverResponse);
         return serverResponse;
     }
 
-    public static String findUsers(List<User> userList, String username, String password){
+    public static String findUsers(String username, String password){
         String serverResponse = "501: Credentials entered incorrect/ user does not exist";
-        for(User u: userList)
+        for(User u: listOfAllUsers)
         {
             if(username.equals(u.getUsername()) &&  password.equals(u.getPassword()))
             {
