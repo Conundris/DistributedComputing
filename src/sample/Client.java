@@ -1,6 +1,7 @@
 package sample;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileSystemView;
 import java.io.*;
 import java.net.SocketException;
@@ -91,17 +92,23 @@ public class Client {
                        "\nEnter file name: ");
                String filePath = br.readLine();
 
-
+               boolean fileChosen = false;
                JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+               File selectedFile;
 
-               int returnValue = jfc.showOpenDialog(null);
-               // int returnValue = jfc.showSaveDialog(null);
+               while(!fileChosen) {
+                  int returnValue = jfc.showOpenDialog(null);
+                  // int returnValue = jfc.showSaveDialog(null);
 
-               if (returnValue == JFileChooser.APPROVE_OPTION) {
-                  File selectedFile = jfc.getSelectedFile();
-                  System.out.println(selectedFile.getAbsolutePath());
+                  if (returnValue == JFileChooser.APPROVE_OPTION) {
+                     if(getFileSizeKiloBytes(jfc.getSelectedFile()) > 64) {
+                        System.out.println("Filesize can't be bigger than 64KB.");
+                     } else {
+                        selectedFile = jfc.getSelectedFile();
+                        fileChosen = true;
+                     }
+                  }
                }
-
 
                //Save File as
                System.out.println("The File Management System supports the following file types: " +
@@ -194,5 +201,8 @@ public class Client {
          return true;
       }
       return false;
+   }
+   private static int getFileSizeKiloBytes(File file) {
+      return (int) file.length() / 1024;
    }
 } // end class      
