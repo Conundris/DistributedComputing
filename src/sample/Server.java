@@ -33,18 +33,18 @@ download unsuccessful
  */
 public class Server {
     private static List<User> listOfAllUsers = new ArrayList<>();
+    private final static String DEFAULTFOLDERPATH = System.getProperty("user.home") + "\\FileManagementServer";
+    private final static int DEFAULTSERVERPORT = 3000;
 
     public static void main(String[] args) {
-        final int DEFAULTSERVERPORT = 3000;
-
-        populateUsers();
-
         String messageCode;
         String username;
         String password;
         String fileName;
         String outputPath;
 
+        // Read all Users from File and create their folders on server if needed
+        populateUsers();
 
         try {
             // instantiates a datagram socket for both sending and receiving data
@@ -58,20 +58,22 @@ public class Server {
                 String message = request.getMessage();
 
                 System.out.println("message received: " + message);
-                // Decode message from 1, myUsername, myPassword etc.
+
                 String[] splitMessage = message.split(",");
+
                 messageCode = splitMessage[0];
                 username = splitMessage[1];
-                password = splitMessage[2];
                 //Removing whitespace from message
                 messageCode = messageCode.trim();
                 username = username.trim();
-                password = password.trim();
 
                 //Determine which type of message & invoke different methods
-                //1 Login,  2 Logout, 3 upload, 4 download, 5. register
                 switch (messageCode) {
-                    case "1":
+                    case "600":
+                        password = splitMessage[2];
+                        //Removing whitespace from message
+                        password = password.trim();
+
                         System.out.println("Log in - server");
                         String loginResp = login(username, password);
                         mySocket.sendMessage(request.getAddress(), request.getPort(), loginResp);
@@ -81,7 +83,7 @@ public class Server {
                         String logoutResp = logout(username);
                         mySocket.sendMessage(request.getAddress(), request.getPort(), logoutResp);
                         break;
-                    case "3":
+                    case "111":
                         System.out.println("Upload - server");
                         System.out.println("The message recieved from the client was: " + message);
 
@@ -96,16 +98,28 @@ public class Server {
                         fileName = fileName.trim();
                         try {
                             String fileContent = splitUploadMessage[3];
-                            FileOutputStream fos = new FileOutputStream("C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\" + username + "\\" + fileName);
+                            FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
                             fos.write(fileContent.getBytes());
                             fos.close();
-                            mySocket.sendMessage(request.getAddress(), request.getPort(), "800 File Uploaded successfully");
+                            mySocket.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
                         }catch (Exception ex){
-                            mySocket.sendMessage(request.getAddress(), request.getPort(), "801 Error Uploading File");
+                            mySocket.sendMessage(request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
                             ex.printStackTrace();
                         }
                         break;
-                    case "4":
+                    case "200":
+
+                        List<String> userFiles = getUserFiles(username);
+
+                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        ObjectOutputStream outputStream = new ObjectOutputStream(out);
+                        outputStream.writeObject(userFiles);
+                        outputStream.close();
+
+                        mySocket.sendMessage(request.getAddress(), request.getPort(), out.toByteArray());
+
+                        break;
+                    /*case "4":
                         System.out.println("Download -server");
                         if(password.equals("getDirectory")){
                             System.out.println("Getting "  + username + "'s directory");
@@ -128,15 +142,10 @@ public class Server {
                             String byteDataString = new String(data);
                             mySocket.sendMessage(request.getAddress(), request.getPort(), byteDataString);
                         }
-                        break;
-                    case "5":
-                        System.out.println("Create account - server");
-                        String resp = createUser(username, password);
-                        mySocket.sendMessage(request.getAddress(), request.getPort(), resp);
-                        break;
+                        break;*/
                     default:
                         System.out.println("An error occured!");
-                        resp = "00: An error occured on ther server try again";
+                        String resp = "00: An error occured on ther server try again";
                         mySocket.sendMessage(request.getAddress(), request.getPort(), resp);
                 }
             } //end while
@@ -145,6 +154,18 @@ public class Server {
             ex.printStackTrace();
         } // end catch
     } //end main
+
+    private static List<String> getUserFiles(String username) {
+        File[] listOfFiles = getUserFolder(username).listFiles();
+
+        ArrayList<String> listOfUserFiles = new ArrayList<>();
+
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) listOfUserFiles.add(listOfFiles[i].getName());
+        }
+
+        return listOfUserFiles;
+    }
 
     private static void populateUsers() {
         final String workingDir = System.getProperty("user.dir");
@@ -159,6 +180,8 @@ public class Server {
                 User user = new User();
                 user.setUsername(splitMessage[0].trim());
                 user.setPassword(splitMessage[1].trim());
+
+                checkIfFolderExists(user);
 
                 listOfAllUsers.add(user);
             }
@@ -188,26 +211,6 @@ public class Server {
 
     public static String login(String username, String password) {
         String serverResponse = "";
-        /*BufferedReader br = null;
-        BufferedReader bRead;
-        FileReader fr = null;
-
-        try {
-            fr = new FileReader("");
-            br = new BufferedReader(fr);
-            InputStreamReader is = new InputStreamReader(System.in);
-            bRead = new BufferedReader(is);
-            String sCurrentLine;
-            String uname = "", pass = "";
-            while ((sCurrentLine = br.readLine()) != null) {
-                System.out.println(sCurrentLine);
-                String[] splitMessage = sCurrentLine.split(", ");
-                uname = splitMessage[0];
-                uname = uname.trim();
-                pass = splitMessage[1];
-                pass = pass.trim();
-                //listOfAllUsers.add(new User((String) uname, (String) pass));
-            }*/
         serverResponse = findUsers(username, password);
         System.out.println(serverResponse);
         return serverResponse;
@@ -219,7 +222,7 @@ public class Server {
         {
             if(username.equals(u.getUsername()) &&  password.equals(u.getPassword()))
             {
-                serverResponse =  "500: " + username + " found & logged in";
+                serverResponse = ResponseCode.USER_LOGGED_IN_PROCEED + ": " + username + " found & logged in";
                 LoggedInUsers.AddToList(new User(username, password));
                 return serverResponse;
             }
@@ -265,6 +268,23 @@ public class Server {
         }
         return serverMessage;
     }
-}//end class
+
+    private static File getUserFolder(String username) {
+        return new File(DEFAULTFOLDERPATH + "\\" + username);
+    }
+
+    private static void checkIfFolderExists(User user) {
+        File baseServerFolder = new File(DEFAULTFOLDERPATH);
+        File userServerFolder = getUserFolder(user.getUsername());
+
+        if(!baseServerFolder.exists()) {
+            baseServerFolder.mkdir();
+        }
+
+        if(!userServerFolder.exists()) {
+            userServerFolder.mkdir();
+        }
+    }
+}
 
 

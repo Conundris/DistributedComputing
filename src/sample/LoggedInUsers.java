@@ -9,11 +9,9 @@ public class LoggedInUsers {
         loggedInUsers.add(user);
     }
     public static void getLoggedInUsers(){
-        int count=0;
-        System.out.println("All the currently logged in users");
+        System.out.println("All the currently logged in users:");
         for(User u: loggedInUsers){
             System.out.println(u.getUsername());
-            count++;
         }
     }
     public static String logOutUser(String username){
@@ -23,8 +21,8 @@ public class LoggedInUsers {
             if (u.getUsername().equals(username)) {
                 System.out.println(i);
                 loggedInUsers.remove(i);
-                System.out.println("700 " + username + " was logged out");
-                serverResponse = "700 " + username + " was logged out";
+                serverResponse = ResponseCode.USER_LOGGED_OUT_SERVICE_TERMINATED + ": " + username + " was logged out";
+                System.out.println(serverResponse);
                 return serverResponse;
             }
             i++;

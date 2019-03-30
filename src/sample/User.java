@@ -35,6 +35,6 @@ public class User {
     }
 
     public void setLoggedIn(boolean loggedIn) {
-        isLoggedIn = true;
+        isLoggedIn = loggedIn;
     }
 }

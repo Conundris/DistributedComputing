@@ -1,14 +1,10 @@
 package sample;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileSystemView;
 import java.io.*;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * This module contains the presentaton logic of a FTP System.
@@ -48,7 +44,7 @@ public class Client {
                   throw new EmptyArgsException("You left Empty Fields");
                }
                serverResult = login(username, password);
-               if(serverResult == String.valueOf(ResponseCode.USER_LOGGED_IN_PROCEED)) {
+               if(Utils.extractOpcode(serverResult) == ResponseCode.USER_LOGGED_IN_PROCEED) {
                   user.setUsername(username);
                   user.setPassword(password);
                   user.setLoggedIn(true);
@@ -69,15 +65,14 @@ public class Client {
       } // end catch
    } //end main
 
-   private static boolean handleInput(BufferedReader br, ClientHelper helper, boolean done, String option) throws IOException, EmptyArgsException {
+   private static boolean handleInput(BufferedReader br, ClientHelper helper, boolean done, String option) throws IOException, EmptyArgsException, ClassNotFoundException {
       String serverResult;
       switch (option) {
          case "1": //Logout
-            System.out.println("You want to log out");
-            System.out.println("Enter username");
+            System.out.println(user.getUsername() + " logging out.");
             serverResult = logout(user.getUsername(), user.getPassword());
 
-            if(serverResult == String.valueOf(ResponseCode.USER_LOGGED_OUT_SERVICE_TERMINATED)) {
+            if(Utils.extractOpcode(serverResult) == ResponseCode.USER_LOGGED_OUT_SERVICE_TERMINATED) {
                user.setUsername("");
                user.setPassword("");
                user.setLoggedIn(false);
@@ -85,74 +80,79 @@ public class Client {
             System.out.println(serverResult);
             break;
          case "2": //Upload
-            //Check Users Details
-            System.out.println("You want to upload");
+            System.out.println("Upload:");
             if (user.isLoggedIn()){
-               System.out.println("Please ensure the file you want to upload is in C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\" +
-                       "\nEnter file name: ");
-               String filePath = br.readLine();
-
                boolean fileChosen = false;
+
                JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+               JDialog dialog = new JDialog();
                File selectedFile;
 
                while(!fileChosen) {
-                  int returnValue = jfc.showOpenDialog(null);
-                  // int returnValue = jfc.showSaveDialog(null);
+                  int returnValue = jfc.showOpenDialog(dialog);
 
                   if (returnValue == JFileChooser.APPROVE_OPTION) {
-                     if(getFileSizeKiloBytes(jfc.getSelectedFile()) > 64) {
+                     if(Utils.getFileSizeKiloBytes(jfc.getSelectedFile()) > 64) {
                         System.out.println("Filesize can't be bigger than 64KB.");
                      } else {
                         selectedFile = jfc.getSelectedFile();
                         fileChosen = true;
+
+                        serverResult = upload(user.getUsername(), selectedFile);
+                        System.out.println(serverResult);
                      }
                   }
                }
-
-               //Save File as
-               System.out.println("The File Management System supports the following file types: " +
-                       "\n.jpg, .txt, .png, .pdf, .doc,");
-               System.out.println("Enter server file name");
-               String fileName = br.readLine();
-               System.out.println("File you want to upload: " + fileName);
-               String fileType = fileName.substring(fileName.length() - 4);
-               boolean isValidFile = validateFileType(fileType);
-               if (isValidFile == false) {
-                  throw new EmptyArgsException("Invalid file type");
-               }
-               System.out.println("Your file type" + fileType);
-               serverResult = upload(user.getUsername(), fileName);
-               // If serverResult(Code)
-
-               System.out.println(serverResult);
                break;
             } else {
                System.out.println(user.getUsername() + " is not logged in");
                break;
             }
-         /*case "3": //Downloads
-            System.out.println("You want to download");
-            LoggedInUsers.AddToList(new User("AoifeSayers", "Hi"));
-            LoggedInUsers.getLoggedInUsers();
-            System.out.println("Enter username");
-            username = br.readLine();
-            if (LoggedInUsers.isLoggedIn(username)==false){
-               System.out.println(username + " is not logged in");
-               break;
-            }
-            serverResult = helper.send("4, " + username + ", "  +"getDirectory");
-            System.out.println(serverResult);
-            System.out.println("Enter file name you wish to download");
-            fileName = br.readLine();
-            System.out.println("Enter name you wish to call the file");
-            String saveFileAs = br.readLine();
-            serverResult = download(username, fileName, saveFileAs);
-            System.out.println(serverResult);
+         case "3": //Downloads
+            System.out.println("Download");
 
-            break;*/
+            helper.send("200, " + user.getUsername());
+            List<String> files = (List<String>) helper.receiveFilePacketsWithSender();
+
+            boolean selectedFile = false;
+            int fileToDownload = -1;
+
+            while(!selectedFile) {
+
+               for (int i = 0; i < files.size(); i++) {
+                  System.out.println(i + ": " + files.get(i));
+               }
+
+               System.out.println("Enter which file you wish to download");
+               String answer = br.readLine();
+
+               try {
+                  fileToDownload = Integer.parseInt(answer.trim());
+                  selectedFile = true;
+               } catch (NumberFormatException nfe) {
+                  System.out.println("NumberFormatException: " + nfe.getMessage());
+                  System.out.println("Please input only a number.");
+               }
+            }
+            if(fileToDownload != -1){
+
+               JFileChooser jfc = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory() + "\\" + files.get(fileToDownload));
+               int returnValue = jfc.showSaveDialog(null);
+
+               if(returnValue == JFileChooser.APPROVE_OPTION) {
+                  File selectedFileToSave = jfc.getSelectedFile();
+                  System.out.println(selectedFileToSave.getName());
+               }
+
+               //serverResult = download(user.getUsername(), files.get(fileToDownload), saveFileAs);
+            }
+
+            break;
          case "4": //Quit
             System.out.println("Quitting!");
+            // if user logged in -> logging him out
+            logout(user.getUsername(), user.getPassword());
+            // Close Socket
             helper.done();
             done = true;
             break;
@@ -163,46 +163,40 @@ public class Client {
       return done;
    }
 
+   private static List<String> getFileList() throws IOException, ClassNotFoundException {
+
+      ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
+      //List<String> files = (List<String>) helper.receiveFilePacketsWithSender();
+
+      return null;
+   }
+
    public static String download(String username, String fileName, String saveFileAs) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String result = helper.send("4, " + username + ", " + fileName);
+      String result = (String) helper.sendAndReceive("4, " + username + ", " + fileName);
       System.out.println("Result received" + result);
       FileOutputStream fos = new FileOutputStream("C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\" + saveFileAs);
       fos.write(result.getBytes());
       fos.close();
       System.out.println("File Downloaded to this destination: C:\\FileManagementSystem\\DistributedComputingFileMgmtSystem\\" + saveFileAs);
-      return  result;
+      return result;
    }
-   public static String upload(String username, String fileName) throws IOException {
+
+   public static String upload(String username, File file) throws IOException {
       ClientHelper helper = new ClientHelper("localhost",String.valueOf(DEFAULTPORT));
-      String homePath = "C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\";
-      Path path = Paths.get(homePath + fileName);
-      byte[] data = Files.readAllBytes(path);
+      byte[] data = Files.readAllBytes(file.toPath());
       String byteDataString = new String(data);
-      String serverResult = helper.send("3" + ", " +  username + ", " + fileName + ", " + byteDataString);
-      return serverResult;
+      String message = ProtocolCode.WRQ + "," +  username + "," + file.getName() + "," + byteDataString;
+      return helper.sendAndReceive(message);
    }
    public static String logout(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
       String message = "2" + ", " + username + ", " + password;
-      String serverResult = helper.send(message);
-      return serverResult;
+      return helper.sendAndReceive(message);
    }
    public static String login(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String message = String.valueOf(ProtocolCode.LOGIN) + ", " + username + ", " + password;
-      String serverResult = helper.send(message);
-      return serverResult;
+      String message = ProtocolCode.LOGIN + ", " + username + ", " + password;
+      return helper.sendAndReceive(message);
    }
-   public static boolean validateFileType(String fileType) {
-      if (fileType.equalsIgnoreCase(".jpg") || fileType.equalsIgnoreCase(".txt") ||
-              fileType.equalsIgnoreCase(".png") || fileType.equalsIgnoreCase(".pdf") ||
-              fileType.equalsIgnoreCase(".doc")) {
-         return true;
-      }
-      return false;
-   }
-   private static int getFileSizeKiloBytes(File file) {
-      return (int) file.length() / 1024;
-   }
-} // end class      
+}
