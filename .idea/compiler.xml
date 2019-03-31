@@ -20,7 +20,12 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="DistributedComputing" target="7" />
+      <module name="DistributedComputing" target="12" />
     </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="DistributedComputing" options="--add-exports=java.base/sun.security.util=ALL-UNNAMED" />
+    </option>
   </component>
 </project>

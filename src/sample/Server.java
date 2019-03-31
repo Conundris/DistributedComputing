@@ -1,9 +1,15 @@
 package sample;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -31,17 +37,59 @@ upload unsuccessful 801
 download success
 download unsuccessful
  */
+@SuppressWarnings("Duplicates")
 public class Server {
     private static List<User> listOfAllUsers = new ArrayList<>();
     private final static String DEFAULTFOLDERPATH = System.getProperty("user.home") + "\\FileManagementServer";
     private final static int DEFAULTSERVERPORT = 3000;
+    private static String keystoreFile = "fms.jks";
+    private static String keyStorePwd = "ittralee";
 
-    public static void main(String[] args) {
+    /*
+     * The following is to set up the keystores.
+     */
+    private static final String pathToStores = "C:\\";
+    private static final String keyStoreFile = "nanithefuck.jks";
+    private static final String trustStoreFile = "public.jks";
+    private static final String passwd = "ittralee";
+
+    private static final String keyFilename =
+            pathToStores + "\\" + keyStoreFile;
+    private static final String trustFilename =
+            pathToStores + "\\" + trustStoreFile;
+
+    public static void main(String[] args) throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, KeyManagementException {
         String messageCode;
         String username;
         String password;
         String fileName;
         String outputPath;
+
+        KeyStore ks = KeyStore.getInstance("JKS");
+        KeyStore ts = KeyStore.getInstance("JKS");
+
+        char[] passphrase = passwd.toCharArray();
+
+        try (FileInputStream fis = new FileInputStream(keyFilename)) {
+            ks.load(fis, passphrase);
+        }
+
+        try (FileInputStream fis = new FileInputStream(trustFilename)) {
+            ts.load(fis, passphrase);
+        }
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, passphrase);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        tmf.init(ts);
+
+        SSLContext sslCtx = SSLContext.getInstance("DTLS");
+
+        sslCtx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+        SSLEngine engine = sslCtx.createSSLEngine("localhost", DEFAULTSERVERPORT);
+        engine.setUseClientMode(false);
 
         // Read all Users from File and create their folders on server if needed
         populateUsers();

@@ -1,9 +1,13 @@
 package sample;
 
+import javax.net.ssl.*;
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
 import java.io.*;
+import java.net.DatagramSocket;
 import java.nio.file.Files;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.List;
 
 /**
@@ -11,12 +15,59 @@ import java.util.List;
  * Adaption of an EchoClient from M. L. Liu
  * @author M. L. Liu
  */
+@SuppressWarnings("Duplicates")
 public class Client {
    private static final int DEFAULTPORT = 3000;
    private static User user = new User();
+   private static String keystoreFile = "fms.jks";
+   private static String keyStorePwd = "ittralee";
+
+   /*
+    * The following is to set up the keystores.
+    */
+   private static final String pathToStores = "C:\\";
+   private static final String keyStoreFile = "nanithefuck.jks";
+   private static final String trustStoreFile = "public.jks";
+   private static final String passwd = "ittralee";
+
+   private static final String keyFilename =
+           pathToStores + "\\" + keyStoreFile;
+   private static final String trustFilename =
+           pathToStores + "\\" + trustStoreFile;
 
 
-   public static void main(String[] args) {
+   public static void main(String[] args) throws NoSuchAlgorithmException, IOException, CertificateException, UnrecoverableKeyException, KeyStoreException, KeyManagementException {
+      KeyStore ks = KeyStore.getInstance("JKS");
+      KeyStore ts = KeyStore.getInstance("JKS");
+
+      char[] passphrase = passwd.toCharArray();
+
+      try (FileInputStream fis = new FileInputStream(keyFilename)) {
+         ks.load(fis, passphrase);
+      }
+
+      try (FileInputStream fis = new FileInputStream(trustFilename)) {
+         ts.load(fis, passphrase);
+      }
+
+      KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+      kmf.init(ks, passphrase);
+
+      TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+      tmf.init(ts);
+
+      SSLContext sslCtx = SSLContext.getInstance("DTLS");
+
+      sslCtx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+      SSLEngine engine = sslCtx.createSSLEngine("localhost", DEFAULTPORT);
+      engine.setUseClientMode(true);
+
+      engine.beginHandshake();
+
+      /*SSLSocketFactory sslsf = (SSLSocketFactory) SSLSocketFactory.getDefault();
+      SSLSocket sslSocket = (SSLSocket) sslsf.createSocket("localhost", DEFAULTPORT);*/
+
       InputStreamReader is = new InputStreamReader(System.in);
       BufferedReader br = new BufferedReader(is);
       try {
@@ -28,7 +79,6 @@ public class Client {
          boolean loggedin = false;
          String message;
          String serverResult;
-
 
          //Program Loop
          while (!done) {
