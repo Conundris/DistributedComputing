@@ -1,5 +1,7 @@
 package sample;
 
+import sample.SSL.SSLServer;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -12,6 +14,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 
 /**
@@ -42,21 +45,6 @@ public class Server {
     private static List<User> listOfAllUsers = new ArrayList<>();
     private final static String DEFAULTFOLDERPATH = System.getProperty("user.home") + "\\FileManagementServer";
     private final static int DEFAULTSERVERPORT = 3000;
-    private static String keystoreFile = "fms.jks";
-    private static String keyStorePwd = "ittralee";
-
-    /*
-     * The following is to set up the keystores.
-     */
-    private static final String pathToStores = "C:\\";
-    private static final String keyStoreFile = "nanithefuck.jks";
-    private static final String trustStoreFile = "public.jks";
-    private static final String passwd = "ittralee";
-
-    private static final String keyFilename =
-            pathToStores + "\\" + keyStoreFile;
-    private static final String trustFilename =
-            pathToStores + "\\" + trustStoreFile;
 
     public static void main(String[] args) throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, KeyManagementException {
         String messageCode;
@@ -65,49 +53,27 @@ public class Server {
         String fileName;
         String outputPath;
 
-        KeyStore ks = KeyStore.getInstance("JKS");
-        KeyStore ts = KeyStore.getInstance("JKS");
 
-        char[] passphrase = passwd.toCharArray();
-
-        try (FileInputStream fis = new FileInputStream(keyFilename)) {
-            ks.load(fis, passphrase);
-        }
-
-        try (FileInputStream fis = new FileInputStream(trustFilename)) {
-            ts.load(fis, passphrase);
-        }
-
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-        kmf.init(ks, passphrase);
-
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-        tmf.init(ts);
-
-        SSLContext sslCtx = SSLContext.getInstance("DTLS");
-
-        sslCtx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-
-        SSLEngine engine = sslCtx.createSSLEngine("localhost", DEFAULTSERVERPORT);
-        engine.setUseClientMode(false);
 
         // Read all Users from File and create their folders on server if needed
         populateUsers();
 
         try {
+            SSLServer server = new SSLServer();
             // instantiates a datagram socket for both sending and receiving data
-            MyServerDatagramSocket mySocket = new MyServerDatagramSocket(DEFAULTSERVERPORT);
+            //MyServerDatagramSocket mySocket = new MyServerDatagramSocket(DEFAULTSERVERPORT);
             System.out.println("File Management server ready.");
 
             while (true) {  // forever loop
                 //Send & receive data
-                DatagramMessage request = mySocket.receiveMessageAndSender();
+                String request = server.receive("localhost", 3001);
+                //DatagramMessage request = mySocket.receiveMessageAndSender();
                 System.out.println("Request received");
-                String message = request.getMessage();
+                //String message = request.getMessage();
 
-                System.out.println("message received: " + message);
+                System.out.println("message received: " + request);
 
-                String[] splitMessage = message.split(",");
+                String[] splitMessage = request.split(",");
 
                 messageCode = splitMessage[0];
                 username = splitMessage[1];
@@ -124,18 +90,18 @@ public class Server {
 
                         System.out.println("Log in - server");
                         String loginResp = login(username, password);
-                        mySocket.sendMessage(request.getAddress(), request.getPort(), loginResp);
+                        //mySocket.sendMessage(request.getAddress(), request.getPort(), loginResp);
                         break;
                     case "2":
                         System.out.println("Log Out - server");
                         String logoutResp = logout(username);
-                        mySocket.sendMessage(request.getAddress(), request.getPort(), logoutResp);
+                        //mySocket.sendMessage(request.getAddress(), request.getPort(), logoutResp);
                         break;
                     case "111":
                         System.out.println("Upload - server");
-                        System.out.println("The message recieved from the client was: " + message);
+                        System.out.println("The message recieved from the client was: " + request);
 
-                        String[] splitUploadMessage = message.split(",");
+                        String[] splitUploadMessage = request.split(",");
                         messageCode = splitUploadMessage[0];
                         messageCode = messageCode.trim();
 
@@ -149,9 +115,9 @@ public class Server {
                             FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
                             fos.write(fileContent.getBytes());
                             fos.close();
-                            mySocket.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
+                            //mySocket.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
                         }catch (Exception ex){
-                            mySocket.sendMessage(request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
+                           // mySocket.sendMessage(request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
                             ex.printStackTrace();
                         }
                         break;
@@ -164,7 +130,7 @@ public class Server {
                         outputStream.writeObject(userFiles);
                         outputStream.close();
 
-                        mySocket.sendMessage(request.getAddress(), request.getPort(), out.toByteArray());
+                        //mySocket.sendMessage(request.getAddress(), request.getPort(), out.toByteArray());
 
                         break;
                     /*case "4":
@@ -194,7 +160,7 @@ public class Server {
                     default:
                         System.out.println("An error occured!");
                         String resp = "00: An error occured on ther server try again";
-                        mySocket.sendMessage(request.getAddress(), request.getPort(), resp);
+                        //mySocket.sendMessage(request.getAddress(), request.getPort(), resp);
                 }
             } //end while
         } // end try

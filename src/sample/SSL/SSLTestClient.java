@@ -6,6 +6,6 @@ public class SSLTestClient {
     public static void main(String[] args) {
         SSLClient client = new SSLClient();
 
-        client.sendAndReceive(ByteBuffer.wrap("Hi Client, I'm Server".getBytes()), "localhost", 3000);
+        client.send(ByteBuffer.wrap("Hi Server, I'm Client".getBytes()), "localhost", 3000);
     }
 }

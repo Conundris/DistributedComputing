@@ -17,13 +17,13 @@ public class SSLClient {
     public SSLClient() {
         try {
             engine = SSLStuff.createSSLEngine(true);
-            this.mySocket = new DatagramSocket();
+            this.mySocket = new DatagramSocket(3001);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public byte[] sendAndReceive(ByteBuffer message, String hostName, int portNum ) {
+    public byte[] send(ByteBuffer message, String hostName, int portNum ) {
         try {
             InetSocketAddress serverSocketAddr = new InetSocketAddress(
                     InetAddress.getByName(hostName), portNum);
@@ -31,21 +31,23 @@ public class SSLClient {
 
             SSLStuff.sendAppData(engine, mySocket, message.duplicate(), serverSocketAddr, "Client");
 
-            ByteBuffer receivedData = SSLStuff.receiveAppData(engine, mySocket, "Client");
+            /*ByteBuffer receivedData = SSLStuff.receiveAppData(engine, mySocket, "Client");
 
             if (receivedData == null) {
                 System.out.println("No Application data received on client side.");
-            }
+            } else {
+                System.out.println("GOT MESSAGE");
+                System.out.println(new String(receivedData.array()));
+            }*/
 
-            return receivedData.array();
+            //return receivedData.array();
+            return null;
 
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
         return new byte[0];
     }
 }

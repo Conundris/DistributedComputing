@@ -12,6 +12,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+/**
+ * A SSLEngine usage example which simplifies the presentation
+ * by removing the I/O and multi-threading concerns.
+ *
+ * The demo creates two SSLEngines, simulating a client and server.
+ * The "transport" layer consists two ByteBuffers:  think of them
+ * as directly connected pipes.
+ *
+ * Note, this is a *very* simple example: real code will be much more
+ * involved.  For example, different threading and I/O models could be
+ * used, transport mechanisms could close unexpectedly, and so on.
+ *
+ * When this application runs, notice that several messages
+ * (wrap/unwrap) pass before any application data is consumed or
+ * produced.  (For more information, please see the SSL/TLS
+ * specifications.)  There may several steps for a successful handshake,
+ * so it's typical to see the following series of operations:
+ *
+ *      client          server          message
+ *      ======          ======          =======
+ *      wrap()          ...             ClientHello
+ *      ...             unwrap()        ClientHello
+ *      ...             wrap()          ServerHello/Certificate
+ *      unwrap()        ...             ServerHello/Certificate
+ *      wrap()          ...             ClientKeyExchange
+ *      wrap()          ...             ChangeCipherSpec
+ *      wrap()          ...             Finished
+ *      ...             unwrap()        ClientKeyExchange
+ *      ...             unwrap()        ChangeCipherSpec
+ *      ...             unwrap()        Finished
+ *      ...             wrap()          ChangeCipherSpec
+ *      ...             wrap()          Finished
+ *      unwrap()        ...             ChangeCipherSpec
+ *      unwrap()        ...             Finished
+ */
+
 @SuppressWarnings("Duplicates")
 public class SSLStuff {
 
@@ -452,6 +488,12 @@ public class SSLStuff {
                 log(side, "Warning: " + e);
                 continue;
             }
+
+            DatagramMessage returnVal = new DatagramMessage( );
+            returnVal.putVal(new String(buf),
+                    packet.getAddress( ),
+                    packet.getPort( ));
+
             ByteBuffer netBuffer = ByteBuffer.wrap(buf, 0, packet.getLength());
             ByteBuffer recBuffer = ByteBuffer.allocate(BUFFER_SIZE);
             SSLEngineResult rs = engine.unwrap(netBuffer, recBuffer);
