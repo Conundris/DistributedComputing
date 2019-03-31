@@ -46,7 +46,7 @@ static final int MAX_LEN = 1024;
                           datagram.getAddress( ),
                           datagram.getPort( ));
          return returnVal;
-   } //end receiveMessage
+   }
 
     public void sendFilePackets(Object data, InetAddress host, int port) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -56,4 +56,4 @@ static final int MAX_LEN = 1024;
         DatagramPacket sendPacket = new DatagramPacket(byteData, byteData.length, host, port);
         send(sendPacket);
     }
-} //end class
+}

@@ -50,9 +50,10 @@ import sun.security.util.HexDumpEncoder;
 /**
  * An example to show the way to use SSLEngine in datagram connections.
  */
+@SuppressWarnings("Duplicates")
 public class DTLSOverDatagram {
 
-    static {
+    /*static {
         // set a custom DatagramSocketImplFactory which can drop packets
         try {
             DatagramSocket.setDatagramSocketImplFactory(
@@ -60,7 +61,7 @@ public class DTLSOverDatagram {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 
     private static final int MAX_HANDSHAKE_LOOPS = 200;
     private static final int MAX_APP_READ_LOOPS = 60;
@@ -154,8 +155,10 @@ public class DTLSOverDatagram {
             throw new Exception("No application data received on client side");
         }
 
-        printHex("Client received application data", appData);
-        printHex("Client expected application data", serverApp);
+        log("Client", new String(appData.array()));
+
+        /*printHex("Client received application data", appData);
+        printHex("Client expected application data", serverApp);*/
         if (!appData.equals(serverApp)) {
             throw new Exception("Unexpected application data on client side");
         }
@@ -184,9 +187,13 @@ public class DTLSOverDatagram {
 
         boolean endLoops = false;
         int loops = MAX_HANDSHAKE_LOOPS;
+
         List<DatagramPacket> packets = new ArrayList<>();
+
         String side = isServer ? "Server" : "Client";
+
         engine.beginHandshake();
+
         while (!endLoops &&
                 (serverException == null) && (clientException == null)) {
 
@@ -195,14 +202,18 @@ public class DTLSOverDatagram {
                         "Too much loops to produce handshake packets");
             }
 
+            // Handshake statuses
+            // NEED_WRAP: must send data to the remote side before handshaking can continue
+            // NEED_UNWRAP: needs to receive data from the remote side before handshaking can continue.
+            // NEED_UNWRAP_AGAIN: needs to receive data from the remote side before handshaking can continue again.
             SSLEngineResult.HandshakeStatus hs = engine.getHandshakeStatus();
             if (hs == SSLEngineResult.HandshakeStatus.NEED_UNWRAP ||
                     hs == SSLEngineResult.HandshakeStatus.NEED_UNWRAP_AGAIN) {
 
                 log(side, "Need DTLS records, handshake status is " + hs);
 
-                ByteBuffer iNet;
-                ByteBuffer iApp;
+                ByteBuffer iNet; //
+                ByteBuffer iApp; //
                 if (hs == SSLEngineResult.HandshakeStatus.NEED_UNWRAP) {
                     byte[] buf = new byte[BUFFER_SIZE];
                     DatagramPacket packet = new DatagramPacket(buf, buf.length);
@@ -293,6 +304,7 @@ public class DTLSOverDatagram {
                     endLoops = true;
                 }
             } else if (hs == SSLEngineResult.HandshakeStatus.NEED_TASK) {
+                log(side, "NEED TASK");
                 runDelegatedTasks(engine);
             } else if (hs == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
                 log(side, "Handshake status is NOT_HANDSHAKING,"
@@ -303,8 +315,7 @@ public class DTLSOverDatagram {
                         "Unexpected status, SSLEngine.getHandshakeStatus() "
                                 + "shouldn't return FINISHED");
             } else {
-                throw new Exception("Can't reach here, handshake status is "
-                        + hs);
+                throw new Exception("Can't reach here, handshake status is " + hs);
             }
         }
 
