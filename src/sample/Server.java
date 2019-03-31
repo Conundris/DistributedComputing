@@ -66,14 +66,14 @@ public class Server {
 
             while (true) {  // forever loop
                 //Send & receive data
-                String request = server.receive("localhost", 3001);
+                DatagramMessage request = server.receive("localhost", 3001);
                 //DatagramMessage request = mySocket.receiveMessageAndSender();
                 System.out.println("Request received");
-                //String message = request.getMessage();
+                String message = request.getMessage();
 
                 System.out.println("message received: " + request);
 
-                String[] splitMessage = request.split(",");
+                String[] splitMessage = message.split(",");
 
                 messageCode = splitMessage[0];
                 username = splitMessage[1];
@@ -90,7 +90,7 @@ public class Server {
 
                         System.out.println("Log in - server");
                         String loginResp = login(username, password);
-                        //mySocket.sendMessage(request.getAddress(), request.getPort(), loginResp);
+                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), loginResp);
                         break;
                     case "2":
                         System.out.println("Log Out - server");
@@ -101,7 +101,7 @@ public class Server {
                         System.out.println("Upload - server");
                         System.out.println("The message recieved from the client was: " + request);
 
-                        String[] splitUploadMessage = request.split(",");
+                        String[] splitUploadMessage = message.split(",");
                         messageCode = splitUploadMessage[0];
                         messageCode = messageCode.trim();
 

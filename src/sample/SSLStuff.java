@@ -119,7 +119,7 @@ public class SSLStuff {
     }
 
     // handshake
-    public static ByteBuffer handshake(SSLEngine engine, DatagramSocket socket,
+    public static DatagramMessage handshake(SSLEngine engine, DatagramSocket socket,
                          SocketAddress peerAddr, boolean isServer) throws Exception {
 
         boolean endLoops = false;
@@ -257,7 +257,7 @@ public class SSLStuff {
         // if a client keeps sending handshake data it may mean
         // that some packets were lost (for example, FINISHED message),
         // and the server needs to re-send last handshake messages
-        ByteBuffer appBuffer = null;
+        DatagramMessage appBuffer = null;
         if (isServer) {
             appBuffer = receiveAppData(engine, socket, side, (Callable) () -> {
                 // looks like client didn't finish handshaking
@@ -460,14 +460,14 @@ public class SSLStuff {
         }
     }
 
-    public static ByteBuffer receiveAppData(SSLEngine engine, DatagramSocket socket,
+    public static DatagramMessage receiveAppData(SSLEngine engine, DatagramSocket socket,
                               String side) throws Exception {
         return receiveAppData(engine, socket, side, null);
     }
 
     // receive application data
     // the method returns not-null if data received
-    public static ByteBuffer receiveAppData(SSLEngine engine, DatagramSocket socket,
+    public static DatagramMessage receiveAppData(SSLEngine engine, DatagramSocket socket,
                                      String side, Callable onHandshakeMessage)
             throws Exception {
 
@@ -489,10 +489,7 @@ public class SSLStuff {
                 continue;
             }
 
-            DatagramMessage returnVal = new DatagramMessage( );
-            returnVal.putVal(new String(buf),
-                    packet.getAddress( ),
-                    packet.getPort( ));
+
 
             ByteBuffer netBuffer = ByteBuffer.wrap(buf, 0, packet.getLength());
             ByteBuffer recBuffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -500,7 +497,13 @@ public class SSLStuff {
             log(side, "receiveAppData(): engine status is " + rs);
             recBuffer.flip();
             if (recBuffer.remaining() != 0) {
-                return recBuffer;
+                //return recBuffer;
+                System.out.println(new String(recBuffer.array()));
+                DatagramMessage returnVal = new DatagramMessage( );
+                returnVal.putVal(new String(recBuffer.array()),
+                        packet.getAddress( ),
+                        packet.getPort( ));
+                return returnVal;
             }
 
             if (onHandshakeMessage != null) {

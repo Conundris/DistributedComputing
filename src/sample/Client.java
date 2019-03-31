@@ -205,7 +205,8 @@ public class Client {
       String message = ProtocolCode.LOGIN + ", " + username + ", " + password;
       SSLClient client = new SSLClient();
       //return helper.sendAndReceive(message);
-      client.send(ByteBuffer.wrap(message.getBytes()),"localhost", 3000);
-      return null;
+      //client.send(ByteBuffer.wrap(message.getBytes()),"localhost", 3000);
+      return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
+      //return client.receive("localhost", 3000).getMessage();
    }
 }
