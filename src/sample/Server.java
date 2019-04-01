@@ -95,6 +95,7 @@ public class Server {
                     case "2":
                         System.out.println("Log Out - server");
                         String logoutResp = logout(username);
+                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), logoutResp);
                         //mySocket.sendMessage(request.getAddress(), request.getPort(), logoutResp);
                         break;
                     case "111":

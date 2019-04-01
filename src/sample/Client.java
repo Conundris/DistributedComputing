@@ -22,6 +22,7 @@ import java.util.List;
 public class Client {
    private static final int DEFAULTPORT = 3000;
    private static User user = new User();
+   private static SSLClient client = new SSLClient();
 
    public static void main(String[] args) throws NoSuchAlgorithmException, IOException, CertificateException, UnrecoverableKeyException, KeyStoreException, KeyManagementException {
             InputStreamReader is = new InputStreamReader(System.in);
@@ -198,12 +199,12 @@ public class Client {
    public static String logout(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
       String message = "2" + ", " + username + ", " + password;
-      return helper.sendAndReceive(message);
+      //return helper.sendAndReceive(message);
+      return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
    }
    public static String login(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
       String message = ProtocolCode.LOGIN + ", " + username + ", " + password;
-      SSLClient client = new SSLClient();
       //return helper.sendAndReceive(message);
       //client.send(ByteBuffer.wrap(message.getBytes()),"localhost", 3000);
       return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
