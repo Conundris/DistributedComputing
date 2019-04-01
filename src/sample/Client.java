@@ -194,7 +194,8 @@ public class Client {
       byte[] data = Files.readAllBytes(file.toPath());
       String byteDataString = new String(data);
       String message = ProtocolCode.WRQ + "," +  username + "," + file.getName() + "," + byteDataString;
-      return helper.sendAndReceive(message);
+      return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
+      //return helper.sendAndReceive(message);
    }
    public static String logout(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));

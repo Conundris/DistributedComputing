@@ -116,9 +116,14 @@ public class Server {
                             FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
                             fos.write(fileContent.getBytes());
                             fos.close();
+                            String returnMessage = ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully";
+
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), returnMessage);
                             //mySocket.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
                         }catch (Exception ex){
-                           // mySocket.sendMessage(request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
+                            String returnMessage = ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File";
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), returnMessage);
+                            // mySocket.sendMessage(request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
                             ex.printStackTrace();
                         }
                         break;
@@ -131,6 +136,7 @@ public class Server {
                         outputStream.writeObject(userFiles);
                         outputStream.close();
 
+                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), out.toByteArray());
                         //mySocket.sendMessage(request.getAddress(), request.getPort(), out.toByteArray());
 
                         break;

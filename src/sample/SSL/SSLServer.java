@@ -77,4 +77,18 @@ public class SSLServer {
             e.printStackTrace();
         }
     }
+
+    public void sendMessage(SSLEngine engine, InetAddress address, int port, byte[] loginResp) {
+        try {
+            InetSocketAddress clientSocketAddr = new InetSocketAddress(
+                    address, port);
+
+            //SSLStuff.handshake(this.engine, mySocket, clientSocketAddr, false);
+
+            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(loginResp), clientSocketAddr, "Server");
+            System.out.println("SENT DATA");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
