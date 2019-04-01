@@ -8,6 +8,7 @@ import java.net.DatagramSocket;
 import java.nio.file.Files;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -161,7 +162,7 @@ public class Client {
          case "3": //Downloads
             System.out.println("Download");
 
-            helper.send("200, " + user.getUsername());
+            helper.send("200§ " + user.getUsername());
             List<String> files = (List<String>) helper.receiveFilePacketsWithSender();
 
             boolean selectedFile = false;
@@ -234,19 +235,20 @@ public class Client {
 
    public static String upload(String username, File file) throws IOException {
       ClientHelper helper = new ClientHelper("localhost",String.valueOf(DEFAULTPORT));
-      byte[] data = Files.readAllBytes(file.toPath());
-      String byteDataString = new String(data);
-      String message = ProtocolCode.WRQ + "," +  username + "," + file.getName() + "," + byteDataString;
+
+      String encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
+
+      String message = ProtocolCode.WRQ + "§" +  username + "§" + file.getName() + "§" + encodedString;
       return helper.sendAndReceive(message);
    }
    public static String logout(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String message = "2" + ", " + username + ", " + password;
+      String message = "2" + "§ " + username + "§ " + password;
       return helper.sendAndReceive(message);
    }
    public static String login(String username, String password) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String message = ProtocolCode.LOGIN + ", " + username + ", " + password;
+      String message = ProtocolCode.LOGIN + "§ " + username + "§ " + password;
       return helper.sendAndReceive(message);
    }
 }
