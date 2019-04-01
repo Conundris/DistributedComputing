@@ -53,6 +53,7 @@ public class Server {
         String password;
         String fileName;
         String outputPath;
+        String encodedString;
 
 
 
@@ -97,7 +98,6 @@ public class Server {
                         System.out.println("Log Out - server");
                         String logoutResp = logout(username);
                         server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), logoutResp);
-                        //mySocket.sendMessage(request.getAddress(), request.getPort(), logoutResp);
                         break;
                     case "111":
                         System.out.println("Upload - server");
@@ -109,14 +109,13 @@ public class Server {
                             String fileContent = splitMessage[3];
                             fileContent = fileContent.trim();
                             byte[] decodedBytes = Base64.getDecoder().decode(fileContent);
-                            String decodedString = new String(decodedBytes);
 
                             FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
                             fos.write(decodedBytes);
                             fos.close();
-                            //mySocket.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
                         }catch (Exception ex){
-                           // mySocket.sendMessage(request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
                             ex.printStackTrace();
                         }
                         break;
@@ -129,8 +128,9 @@ public class Server {
                         outputStream.writeObject(userFiles);
                         outputStream.close();
 
-                        //mySocket.sendMessage(request.getAddress(), request.getPort(), out.toByteArray());
+                        encodedString = Base64.getEncoder().encodeToString(out.toByteArray());
 
+                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), encodedString);
                         break;
                     case "4":
                         System.out.println("Download to Client");
@@ -141,14 +141,14 @@ public class Server {
                         System.out.println("Getting file");
                         Path path = Paths.get(getUserFolder(username) + "\\" + fileName);
 
-                        String encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
+                        encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
 
-                        mySocket.sendMessage(request.getAddress(), request.getPort(), encodedString);
+                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), encodedString);
                         break;
                     default:
                         System.out.println("An error occured!");
                         String resp = "00: An error occured on ther server try again";
-                        //mySocket.sendMessage(request.getAddress(), request.getPort(), resp);
+                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), resp);
                 }
             } //end while
         } // end try
