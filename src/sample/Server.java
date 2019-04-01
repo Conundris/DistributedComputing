@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -73,7 +74,7 @@ public class Server {
 
                 System.out.println("message received: " + request);
 
-                String[] splitMessage = message.split(",");
+                String[] splitMessage = message.split("§");
 
                 messageCode = splitMessage[0];
                 username = splitMessage[1];
@@ -102,19 +103,16 @@ public class Server {
                         System.out.println("Upload - server");
                         System.out.println("The message recieved from the client was: " + request);
 
-                        String[] splitUploadMessage = message.split(",");
-                        messageCode = splitUploadMessage[0];
-                        messageCode = messageCode.trim();
-
-                        username = splitUploadMessage[1];
-                        username = username.trim();
-
-                        fileName = splitUploadMessage[2];
+                        fileName = splitMessage[2];
                         fileName = fileName.trim();
                         try {
-                            String fileContent = splitUploadMessage[3];
+                            String fileContent = splitMessage[3];
+                            fileContent = fileContent.trim();
+                            byte[] decodedBytes = Base64.getDecoder().decode(fileContent);
+                            String decodedString = new String(decodedBytes);
+
                             FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
-                            fos.write(fileContent.getBytes());
+                            fos.write(decodedBytes);
                             fos.close();
                             //mySocket.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
                         }catch (Exception ex){
@@ -134,30 +132,19 @@ public class Server {
                         //mySocket.sendMessage(request.getAddress(), request.getPort(), out.toByteArray());
 
                         break;
-                    /*case "4":
-                        System.out.println("Download -server");
-                        if(password.equals("getDirectory")){
-                            System.out.println("Getting "  + username + "'s directory");
-                            File[] files = new File("C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\"+username).listFiles();
-                            System.out.println("\\users\\"+username);
-                            List<String> listOfFiles = new ArrayList<String>();
-                            for(File f:files){
-                                System.out.println(f.getName());
-                                listOfFiles.add(f.getName());
-                            }
-                            String response = "Getting Directory \\users\\"+username + ": \n" + listOfFiles.toString();
-                            System.out.println(response);
-                            mySocket.sendMessage(request.getAddress(), request.getPort(), response);
-                        }
-                        else {
-                            System.out.println("Getting file");
-                            String strPath = "C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\" + username+"\\"+password;
-                            Path path = Paths.get(strPath);
-                            byte[] data = Files.readAllBytes(path);
-                            String byteDataString = new String(data);
-                            mySocket.sendMessage(request.getAddress(), request.getPort(), byteDataString);
-                        }
-                        break;*/
+                    case "4":
+                        System.out.println("Download to Client");
+
+                        fileName = splitMessage[2];
+                        fileName = fileName.trim();
+
+                        System.out.println("Getting file");
+                        Path path = Paths.get(getUserFolder(username) + "\\" + fileName);
+
+                        String encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
+
+                        mySocket.sendMessage(request.getAddress(), request.getPort(), encodedString);
+                        break;
                     default:
                         System.out.println("An error occured!");
                         String resp = "00: An error occured on ther server try again";
@@ -206,19 +193,6 @@ public class Server {
         }
     }
 
-    public static String checkIfLoggedIn(String username){
-       Boolean isLoggedIn =  LoggedInUsers.isLoggedIn(username);
-        System.out.println(isLoggedIn);
-        String loggedInResp = "default";
-        if(isLoggedIn.equals(false)){
-            loggedInResp = username + " is not logged in";
-            return loggedInResp;
-        }
-        else if(isLoggedIn.equals(true)) {
-            loggedInResp = username + " is logged in";
-        }
-        return loggedInResp;
-    }
     public static String logout(String username){
         String logoutResp = LoggedInUsers.logOutUser(username);
         return logoutResp;
@@ -243,45 +217,6 @@ public class Server {
             }
         }
         return serverResponse;
-    }
-
-    public static String createUser(String username, String password) {
-        BufferedWriter bw = null;
-        FileWriter fw = null;
-        //Set path & Create directory for each user in users/myName
-        String path = "C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\";;
-        File dir = new File(path+username);
-        String serverMessage = "default mssg";
-        //Check if directory exists
-        if(!dir.exists()) {
-            if (dir.mkdirs()) {
-                System.out.println(dir.toString() + " has been created");
-                try {
-                    String message = username + ", " + password;
-                    fw = new FileWriter(path+"Users.txt", true);
-                    bw = new BufferedWriter(fw);
-                    bw.write(message + "\n");
-                    bw.append("");
-                    System.out.println("Users were added to file");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        if (bw != null)
-                            bw.close();
-                        if (fw != null)
-                            fw.close();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                    serverMessage = "600: User Created: " + username;
-                }
-            } else {
-                System.out.println("error occured");
-                serverMessage = "601: Sorry an error occured - user may already exist or something went wrong";
-            }
-        }
-        return serverMessage;
     }
 
     private static File getUserFolder(String username) {
