@@ -169,15 +169,13 @@ public class Server {
                         System.out.println("Download to Client");
 
                         fileName = splitMessage[2];
+                        fileName = fileName.trim();
 
                         System.out.println("Getting file");
-                        String strPath = "C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\" + username+"\\" + fileName;
-                        Path path = Paths.get(strPath);
-                        byte[] data = Files.readAllBytes(path);
+                        Path path = Paths.get(getUserFolder(username) + "\\" + fileName);
 
                         String encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
 
-                        String byteDataString = new String(data);
                         mySocket.sendMessage(request.getAddress(), request.getPort(), encodedString);
                         break;
                     default:
@@ -228,19 +226,6 @@ public class Server {
         }
     }
 
-    public static String checkIfLoggedIn(String username){
-       Boolean isLoggedIn =  LoggedInUsers.isLoggedIn(username);
-        System.out.println(isLoggedIn);
-        String loggedInResp = "default";
-        if(isLoggedIn.equals(false)){
-            loggedInResp = username + " is not logged in";
-            return loggedInResp;
-        }
-        else if(isLoggedIn.equals(true)) {
-            loggedInResp = username + " is logged in";
-        }
-        return loggedInResp;
-    }
     public static String logout(String username){
         String logoutResp = LoggedInUsers.logOutUser(username);
         return logoutResp;
@@ -265,45 +250,6 @@ public class Server {
             }
         }
         return serverResponse;
-    }
-
-    public static String createUser(String username, String password) {
-        BufferedWriter bw = null;
-        FileWriter fw = null;
-        //Set path & Create directory for each user in users/myName
-        String path = "C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\users\\";;
-        File dir = new File(path+username);
-        String serverMessage = "default mssg";
-        //Check if directory exists
-        if(!dir.exists()) {
-            if (dir.mkdirs()) {
-                System.out.println(dir.toString() + " has been created");
-                try {
-                    String message = username + ", " + password;
-                    fw = new FileWriter(path+"Users.txt", true);
-                    bw = new BufferedWriter(fw);
-                    bw.write(message + "\n");
-                    bw.append("");
-                    System.out.println("Users were added to file");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        if (bw != null)
-                            bw.close();
-                        if (fw != null)
-                            fw.close();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                    serverMessage = "600: User Created: " + username;
-                }
-            } else {
-                System.out.println("error occured");
-                serverMessage = "601: Sorry an error occured - user may already exist or something went wrong";
-            }
-        }
-        return serverMessage;
     }
 
     private static File getUserFolder(String username) {

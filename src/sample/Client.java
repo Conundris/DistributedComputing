@@ -160,13 +160,16 @@ public class Client {
                break;
             }
          case "3": //Downloads
+            File selectedFileToSave = null;
+            boolean selectedFile = false;
+            int fileToDownload = -1;
+
             System.out.println("Download");
 
             helper.send("200§ " + user.getUsername());
             List<String> files = (List<String>) helper.receiveFilePacketsWithSender();
 
-            boolean selectedFile = false;
-            int fileToDownload = -1;
+
 
             while(!selectedFile) {
 
@@ -191,11 +194,11 @@ public class Client {
                int returnValue = jfc.showSaveDialog(null);
 
                if(returnValue == JFileChooser.APPROVE_OPTION) {
-                  File selectedFileToSave = jfc.getSelectedFile();
+                  selectedFileToSave = jfc.getSelectedFile();
                   System.out.println(selectedFileToSave.getName());
                }
 
-               //serverResult = download(user.getUsername(), files.get(fileToDownload), saveFileAs);
+               download(user.getUsername(), files.get(fileToDownload), selectedFileToSave);
             }
 
             break;
@@ -222,15 +225,15 @@ public class Client {
       return null;
    }
 
-   public static String download(String username, String fileName, String saveFileAs) throws IOException {
+   public static void download(String username, String fileName, File path) throws IOException {
       ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String result = (String) helper.sendAndReceive("4, " + username + ", " + fileName);
+      String result = helper.sendAndReceive("4§ " + username + "§ " + fileName);
+      result = result.trim();
       System.out.println("Result received" + result);
-      FileOutputStream fos = new FileOutputStream("C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\" + saveFileAs);
-      fos.write(result.getBytes());
+      FileOutputStream fos = new FileOutputStream(path);
+      fos.write(Base64.getDecoder().decode(result));
       fos.close();
-      System.out.println("File Downloaded to this destination: C:\\FileManagementSystem\\DistributedComputingFileMgmtSystem\\" + saveFileAs);
-      return result;
+      System.out.println("File Downloaded to this destination: " + path);
    }
 
    public static String upload(String username, File file) throws IOException {
