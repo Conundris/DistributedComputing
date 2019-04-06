@@ -2,15 +2,17 @@ package sample;
 
 import sample.SSL.SSLClient;
 
-import javax.net.ssl.*;
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
 import java.io.*;
-import java.net.DatagramSocket;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.security.*;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -24,7 +26,7 @@ public class Client {
    private static User user = new User();
    private static SSLClient client = new SSLClient();
 
-   public static void main(String[] args) throws NoSuchAlgorithmException, IOException, CertificateException, UnrecoverableKeyException, KeyStoreException, KeyManagementException {
+   public static void main(String[] args) {
             InputStreamReader is = new InputStreamReader(System.in);
       BufferedReader br = new BufferedReader(is);
       try {
@@ -33,8 +35,6 @@ public class Client {
          String portNum = "3000";
          ClientHelper helper = new ClientHelper(hostName, portNum);
          boolean done = false;
-         boolean loggedin = false;
-         String message;
          String serverResult;
 
          //Program Loop
@@ -116,13 +116,17 @@ public class Client {
                break;
             }
          case "3": //Downloads
-            System.out.println("Download");
-
-            helper.send("200, " + user.getUsername());
-            List<String> files = (List<String>) helper.receiveFilePacketsWithSender();
-
+            File selectedFileToSave = null;
             boolean selectedFile = false;
             int fileToDownload = -1;
+
+            System.out.println("Download");
+
+            String returnVal = client.sendAndReceive(ByteBuffer.wrap(("200§ " + user.getUsername()).getBytes()), "localhost", 3000).getMessage();
+            returnVal = returnVal.trim();
+            ByteArrayInputStream in = new ByteArrayInputStream(Base64.getDecoder().decode(returnVal));
+            ObjectInputStream is = new ObjectInputStream(in);
+            List<String> files = (List<String>) is.readObject();
 
             while(!selectedFile) {
 
@@ -147,11 +151,11 @@ public class Client {
                int returnValue = jfc.showSaveDialog(null);
 
                if(returnValue == JFileChooser.APPROVE_OPTION) {
-                  File selectedFileToSave = jfc.getSelectedFile();
+                  selectedFileToSave = jfc.getSelectedFile();
                   System.out.println(selectedFileToSave.getName());
                }
 
-               //serverResult = download(user.getUsername(), files.get(fileToDownload), saveFileAs);
+               download(user.getUsername(), files.get(fileToDownload), selectedFileToSave);
             }
 
             break;
@@ -178,37 +182,33 @@ public class Client {
       return null;
    }
 
-   public static String download(String username, String fileName, String saveFileAs) throws IOException {
-      ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String result = (String) helper.sendAndReceive("4, " + username + ", " + fileName);
+   public static void download(String username, String fileName, File path) throws IOException {
+      String message = "4§ " + username + "§ " + fileName;
+      String result = client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
+      result = result.trim();
+
       System.out.println("Result received" + result);
-      FileOutputStream fos = new FileOutputStream("C:\\Users\\exceeds\\Downloads\\FileManagementSystem-master\\DistributedComputingFileMgmtSystem\\" + saveFileAs);
-      fos.write(result.getBytes());
+      FileOutputStream fos = new FileOutputStream(path);
+      fos.write(Base64.getDecoder().decode(result));
       fos.close();
-      System.out.println("File Downloaded to this destination: C:\\FileManagementSystem\\DistributedComputingFileMgmtSystem\\" + saveFileAs);
-      return result;
+
+      System.out.println("File Downloaded to this destination: " + path);
    }
 
    public static String upload(String username, File file) throws IOException {
-      ClientHelper helper = new ClientHelper("localhost",String.valueOf(DEFAULTPORT));
-      byte[] data = Files.readAllBytes(file.toPath());
-      String byteDataString = new String(data);
-      String message = ProtocolCode.WRQ + "," +  username + "," + file.getName() + "," + byteDataString;
+      String encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
+
+      String message = ProtocolCode.WRQ + "§" +  username + "§" + file.getName() + "§" + encodedString;
+
       return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
-      //return helper.sendAndReceive(message);
    }
+
    public static String logout(String username, String password) throws IOException {
-      ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String message = "2" + ", " + username + ", " + password;
-      //return helper.sendAndReceive(message);
+      String message = "2" + "§ " + username + "§ " + password;
       return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
    }
    public static String login(String username, String password) throws IOException {
-      ClientHelper helper = new ClientHelper("localhost", String.valueOf(DEFAULTPORT));
-      String message = ProtocolCode.LOGIN + ", " + username + ", " + password;
-      //return helper.sendAndReceive(message);
-      //client.send(ByteBuffer.wrap(message.getBytes()),"localhost", 3000);
+      String message = ProtocolCode.LOGIN + "§ " + username + "§ " + password;
       return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
-      //return client.receive("localhost", 3000).getMessage();
    }
 }

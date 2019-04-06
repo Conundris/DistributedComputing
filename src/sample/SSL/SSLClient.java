@@ -4,6 +4,9 @@ import sample.DatagramMessage;
 import sample.SSLStuff;
 
 import javax.net.ssl.SSLEngine;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
 
@@ -60,7 +63,7 @@ public class SSLClient {
                     InetAddress.getByName(hostName), portNum);
 
             // handshaking
-            SSLStuff.handshake(engine, mySocket, serverSocketAddr, false);
+            //SSLStuff.handshake(engine, mySocket, serverSocketAddr, false);
 
             DatagramMessage receivedData = SSLStuff.receiveAppData(engine, mySocket, "Client");
 

@@ -4,7 +4,6 @@ import sample.DatagramMessage;
 import sample.SSLStuff;
 
 import javax.net.ssl.SSLEngine;
-import javax.print.DocFlavor;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -64,28 +63,28 @@ public class SSLServer {
         return "";
     }
 
-    public void sendMessage(SSLEngine engine, InetAddress address, int port, String loginResp) {
+    public void sendMessage(SSLEngine engine, InetAddress address, int port, String message) {
         try {
             InetSocketAddress clientSocketAddr = new InetSocketAddress(
                     address, port);
 
             //SSLStuff.handshake(this.engine, mySocket, clientSocketAddr, false);
 
-            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(loginResp.getBytes()), clientSocketAddr, "Server");
+            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(message.getBytes()), clientSocketAddr, "Server");
             System.out.println("SENT DATA");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void sendMessage(SSLEngine engine, InetAddress address, int port, byte[] loginResp) {
+    public void sendMessage(SSLEngine engine, InetAddress address, int port, byte[] message) {
         try {
             InetSocketAddress clientSocketAddr = new InetSocketAddress(
                     address, port);
 
             //SSLStuff.handshake(this.engine, mySocket, clientSocketAddr, false);
 
-            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(loginResp), clientSocketAddr, "Server");
+            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(message), clientSocketAddr, "Server");
             System.out.println("SENT DATA");
         } catch (Exception e) {
             e.printStackTrace();
