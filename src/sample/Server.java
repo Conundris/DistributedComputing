@@ -47,12 +47,12 @@ public class Server {
     private final static String DEFAULTFOLDERPATH = System.getProperty("user.home") + "\\FileManagementServer";
     private final static int DEFAULTSERVERPORT = 3000;
 
-    public static void main(String[] args) throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException, KeyManagementException {
+    public static void main(String[] args) {
+        Short requestCode = 999;
         String messageCode;
         String username;
         String password;
         String fileName;
-        String outputPath;
         String encodedString;
 
 
@@ -69,23 +69,24 @@ public class Server {
             while (true) {  // forever loop
                 //Send & receive data
                 DatagramMessage request = server.receive("localhost", 3001);
-                //DatagramMessage request = mySocket.receiveMessageAndSender();
                 System.out.println("Request received");
                 String message = request.getMessage();
-
                 System.out.println("message received: " + request);
-
+                // Example Message for Login: 600§admin§password
                 String[] splitMessage = message.split("§");
-
-                messageCode = splitMessage[0];
-                username = splitMessage[1];
                 //Removing whitespace from message
-                messageCode = messageCode.trim();
-                username = username.trim();
+                messageCode = splitMessage[0].trim();
+                username = splitMessage[1].trim();
+
+                try {
+                    requestCode = Short.parseShort(messageCode.trim());
+                } catch (NumberFormatException nfe) {
+                    System.out.println("Invalid request code found.");
+                }
 
                 //Determine which type of message & invoke different methods
-                switch (messageCode) {
-                    case "600":
+                switch (requestCode) {
+                    case RequestCode.LOGIN:
                         password = splitMessage[2];
                         //Removing whitespace from message
                         password = password.trim();
@@ -94,12 +95,12 @@ public class Server {
                         String loginResp = login(username, password);
                         server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), loginResp);
                         break;
-                    case "2":
+                    case RequestCode.LOGOUT:
                         System.out.println("Log Out - server");
                         String logoutResp = logout(username);
                         server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), logoutResp);
                         break;
-                    case "111":
+                    case RequestCode.UPL:
                         System.out.println("Upload - server");
                         System.out.println("The message recieved from the client was: " + request);
 
@@ -113,41 +114,49 @@ public class Server {
                             FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
                             fos.write(decodedBytes);
                             fos.close();
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.CLOSING_DATA_CONNECTION + ": File Uploaded successfully");
-                        }catch (Exception ex){
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.CANT_OPEN_DATA_CONNECTION + ": Error Uploading File");
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.UPLOAD_SUCCESSFUL + ": File Uploaded successfully");
+                        } catch (Exception ex){
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.UPLOAD_NOT_SUCCESSFUL+ ": Error Uploading File");
                             ex.printStackTrace();
                         }
                         break;
-                    case "200":
+                    case RequestCode.DDLIST:
 
-                        List<String> userFiles = getUserFiles(username);
+                        try {
+                            List<String> userFiles = getUserFiles(username);
 
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        ObjectOutputStream outputStream = new ObjectOutputStream(out);
-                        outputStream.writeObject(userFiles);
-                        outputStream.close();
+                            ByteArrayOutputStream out = new ByteArrayOutputStream();
+                            ObjectOutputStream outputStream = new ObjectOutputStream(out);
+                            outputStream.writeObject(userFiles);
+                            outputStream.close();
 
-                        encodedString = Base64.getEncoder().encodeToString(out.toByteArray());
+                            encodedString = Base64.getEncoder().encodeToString(out.toByteArray());
 
-                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), encodedString);
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(),  ResponseCode.USER_FILES_LISTED + ": " + encodedString);
+                        } catch(Exception e) {
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), String.valueOf(ResponseCode.USER_FILES_ERROR));
+                        }
                         break;
-                    case "4":
+                    case RequestCode.DDL:
                         System.out.println("Download to Client");
 
-                        fileName = splitMessage[2];
-                        fileName = fileName.trim();
+                        try {
+                            fileName = splitMessage[2];
+                            fileName = fileName.trim();
 
-                        System.out.println("Getting file");
-                        Path path = Paths.get(getUserFolder(username) + "\\" + fileName);
+                            System.out.println("Getting file: " + fileName);
+                            Path path = Paths.get(getUserFolder(username) + "\\" + fileName);
 
-                        encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
+                            encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
 
-                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), encodedString);
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.DOWNLOAD_SUCCESSFUL + ": " + encodedString);
+                        } catch(Exception e) {
+                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), String.valueOf(ResponseCode.DOWNLOAD_UNSUCCESSFUL));
+                        }
                         break;
                     default:
                         System.out.println("An error occured!");
-                        String resp = "00: An error occured on ther server try again";
+                        String resp = ResponseCode.COMMAND_UNRECOGNIZED + ": An error occured on the server try again";
                         server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), resp);
                 }
             } //end while
@@ -199,19 +208,19 @@ public class Server {
     }
 
     public static String login(String username, String password) {
-        String serverResponse = "";
-        serverResponse = findUsers(username, password);
+        String serverResponse;
+        serverResponse = findUser(username, password);
         System.out.println(serverResponse);
         return serverResponse;
     }
 
-    public static String findUsers(String username, String password){
-        String serverResponse = "501: Credentials entered incorrect/ user does not exist";
+    public static String findUser(String username, String password){
+        String serverResponse =  ResponseCode.USER_LOGIN_NOT_SUCCUESSFUL + ": Credentials entered incorrect/ user does not exist";
         for(User u: listOfAllUsers)
         {
             if(username.equals(u.getUsername()) &&  password.equals(u.getPassword()))
             {
-                serverResponse = ResponseCode.USER_LOGGED_IN_PROCEED + ": " + username + " found & logged in";
+                serverResponse = ResponseCode.USER_LOGGED_IN_PROCEED + ": " + username + " logged in";
                 LoggedInUsers.AddToList(new User(username, password));
                 return serverResponse;
             }

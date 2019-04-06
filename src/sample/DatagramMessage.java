@@ -1,7 +1,6 @@
 package sample;
 
-import java.io.File;
-import java.net.*;
+import java.net.InetAddress;
 /**
  * A class to use with MyServerDatagramSocket for
  * returning a message and the sender's address

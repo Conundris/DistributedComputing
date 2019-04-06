@@ -1,12 +1,8 @@
 package sample.SSL;
 
 import sample.DatagramMessage;
-import sample.SSLStuff;
 
 import javax.net.ssl.SSLEngine;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
 
@@ -16,7 +12,7 @@ public class SSLClient {
     private SSLEngine engine;
     private DatagramSocket mySocket;
 
-    public SSLClient() {
+    public SSLClient(int portNum) {
         try {
             this.mySocket = new DatagramSocket(3001);
         } catch (Exception e) {
@@ -118,5 +114,9 @@ public class SSLClient {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public void done() {
+        mySocket.close();
     }
 }

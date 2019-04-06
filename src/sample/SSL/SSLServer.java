@@ -1,7 +1,6 @@
 package sample.SSL;
 
 import sample.DatagramMessage;
-import sample.SSLStuff;
 
 import javax.net.ssl.SSLEngine;
 import java.net.DatagramSocket;

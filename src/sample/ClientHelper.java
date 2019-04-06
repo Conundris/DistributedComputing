@@ -15,10 +15,10 @@ public class ClientHelper extends DatagramSocket {
 
    private static final int MAX_LEN = 1024;
 
-   ClientHelper(String hostName, String portNum)
+   ClientHelper(String hostName, int portNum)
       throws SocketException, UnknownHostException {
       this.serverHost = InetAddress.getByName(hostName);
-      this.serverPort = Integer.parseInt(portNum);
+      this.serverPort = portNum;
       // instantiates a datagram socket for both sending
       // and receiving data
       this.mySocket = new MyClientDatagramSocket();

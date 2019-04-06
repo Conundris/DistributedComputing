@@ -1,4 +1,6 @@
-package sample;
+package sample.SSL;
+
+import sample.DatagramMessage;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
@@ -120,7 +122,7 @@ public class SSLStuff {
 
     // handshake
     public static DatagramMessage handshake(SSLEngine engine, DatagramSocket socket,
-                         SocketAddress peerAddr, boolean isServer) throws Exception {
+                                            SocketAddress peerAddr, boolean isServer) throws Exception {
 
         boolean endLoops = false;
         int loops = MAX_HANDSHAKE_LOOPS;
