@@ -1,14 +1,13 @@
 package sample;
 
-import sample.SSL.SSLClient;
-
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
-import java.awt.image.ReplicateScaleFilter;
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.util.Base64;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -19,12 +18,15 @@ import java.util.List;
 @SuppressWarnings("Duplicates")
 public class Client {
    private static final int DEFAULTPORT = 3000;
+   private static final String DEFAULTHOST = "localhost";
    private static User user = new User();
-   private static SSLClient client = new SSLClient(DEFAULTPORT);
 
-   public static void main(String[] args) {
-            InputStreamReader is = new InputStreamReader(System.in);
+
+   public static void main(String[] args) throws SocketException, UnknownHostException {
+      InputStreamReader is = new InputStreamReader(System.in);
       BufferedReader br = new BufferedReader(is);
+      ClientHelper clientHelper = new ClientHelper(DEFAULTPORT, DEFAULTHOST);
+
       try {
          System.out.println("Welcome to the File Management System client");
 
@@ -43,7 +45,7 @@ public class Client {
                if (username.equals("") || username.isEmpty() ||
                        password.equals("") || password.isEmpty()) {
                }
-               serverResult = login(username, password);
+               serverResult = clientHelper.login(username, password);
                if(Utils.extractResponseCode(serverResult) == ResponseCode.USER_LOGGED_IN_PROCEED) {
                   user.setUsername(username);
                   user.setPassword(password);
@@ -58,7 +60,7 @@ public class Client {
                     "\n3. Download" +
                     "\n4 Quit");
             String option = br.readLine();
-            done = handleInput(br, option);
+            done = handleInput(br, option, clientHelper);
          } // end while
       } // end try  
       catch (Exception ex) {
@@ -66,14 +68,14 @@ public class Client {
       } // end catch
    } //end main
 
-   private static boolean handleInput(BufferedReader br, String option) throws IOException, ClassNotFoundException {
+   private static boolean handleInput(BufferedReader br, String option, ClientHelper clientHelper) throws IOException, ClassNotFoundException {
       String serverResult;
       boolean done = false;
 
       switch (option) {
          case "1": //Logout
             System.out.println(user.getUsername() + " logging out.");
-            serverResult = logout(user.getUsername(), user.getPassword());
+            serverResult = clientHelper.logout(user.getUsername(), user.getPassword());
 
             if(Utils.extractResponseCode(serverResult) == ResponseCode.USER_LOGGED_OUT) {
                user.setUsername("");
@@ -101,7 +103,7 @@ public class Client {
                         selectedFile = jfc.getSelectedFile();
                         fileChosen = true;
 
-                        serverResult = upload(user.getUsername(), selectedFile);
+                        serverResult = clientHelper.upload(user.getUsername(), selectedFile);
                         System.out.println(serverResult);
                      }
                   }
@@ -117,7 +119,7 @@ public class Client {
             File selectedFileToSave = null;
             boolean selectedFile = false;
             int fileToDownload = -1;
-            List<String> files = getFileListForUser();
+            List<String> files = clientHelper.getFileListForUser(user.getUsername());
 
             if(files != null) {
                //File Selection Loop
@@ -150,7 +152,7 @@ public class Client {
                      System.out.println(selectedFileToSave.getName());
                   }
 
-                  download(user.getUsername(), files.get(fileToDownload), selectedFileToSave);
+                  clientHelper.download(user.getUsername(), files.get(fileToDownload), selectedFileToSave);
                }
             } else {
                System.out.println("Retrieving list of files for user: " + user.getUsername() + " was unsuccessful.");
@@ -159,10 +161,10 @@ public class Client {
          case "4": //Quit
             System.out.println("Quitting Application.");
             // if user logged in -> logging him out
-            if(user.isLoggedIn()) logout(user.getUsername(), user.getPassword());
+            if(user.isLoggedIn()) clientHelper.logout(user.getUsername(), user.getPassword());
             // Close Socket
             done = true;
-            client.done();
+            clientHelper.closeSSLClient();
             break;
          default:
             System.out.println("Invalid option! Try again");
@@ -171,58 +173,4 @@ public class Client {
       return done;
    }
 
-   public static void download(String username, String fileName, File path) throws IOException {
-      String message = RequestCode.DDL + "§ " + username + "§ " + fileName;
-      String result = client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage().trim();
-
-      System.out.println("Response received" + result);
-
-      String[] splitresult = result.split(":");
-
-      if(Short.parseShort(splitresult[0].trim()) == ResponseCode.DOWNLOAD_SUCCESSFUL) {
-         FileOutputStream fos = new FileOutputStream(path);
-         fos.write(Base64.getDecoder().decode(splitresult[1].trim()));
-         fos.close();
-
-         System.out.println("File Downloaded to this destination: " + path);
-      } else {
-         System.out.println("File Has not been downloaded successfully, ERROR");
-      }
-   }
-
-   public static String upload(String username, File file) throws IOException {
-      String encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
-
-      String message = RequestCode.UPL + "§" +  username + "§" + file.getName() + "§" + encodedString;
-
-      return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
-   }
-
-   public static String logout(String username, String password) {
-      String message = RequestCode.LOGOUT + "§ " + username + "§ " + password;
-      return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
-   }
-
-   public static String login(String username, String password) {
-      String message = RequestCode.LOGIN + "§ " + username + "§ " + password;
-      return client.sendAndReceive(ByteBuffer.wrap(message.getBytes()), "localhost", 3000).getMessage();
-   }
-
-   private static List<String> getFileListForUser() throws IOException, ClassNotFoundException {
-      String returnVal = client.sendAndReceive(ByteBuffer.wrap((RequestCode.DDLIST +"§ " + user.getUsername()).getBytes()), "localhost", 3000).getMessage().trim();
-
-      String[] splitReturnVal = returnVal.split(":");
-
-      if(Short.parseShort(splitReturnVal[0].trim()) == ResponseCode.USER_FILES_LISTED) {
-         System.out.println(splitReturnVal[0] + ": FileList retrieved.");
-
-         ByteArrayInputStream in = new ByteArrayInputStream(Base64.getDecoder().decode(splitReturnVal[1].trim()));
-         ObjectInputStream is = new ObjectInputStream(in);
-
-         return (List<String>) is.readObject();
-      } else {
-         System.out.println(splitReturnVal[0] + ": FileList couldn't be retrieved.");
-         return null;
-      }
-   }
 }

@@ -1,21 +1,14 @@
 package sample;
 
-import sample.SSL.SSLServer;
+import sample.SSL.DTLSServer;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.*;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.Scanner;
 
 /**
@@ -61,7 +54,7 @@ public class Server {
         populateUsers();
 
         try {
-            SSLServer server = new SSLServer();
+            DTLSServer server = new DTLSServer();
             // instantiates a datagram socket for both sending and receiving data
             //MyServerDatagramSocket mySocket = new MyServerDatagramSocket(DEFAULTSERVERPORT);
             System.out.println("File Management server ready.");

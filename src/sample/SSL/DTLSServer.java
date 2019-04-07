@@ -8,11 +8,11 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public class SSLServer {
+public class DTLSServer {
     private SSLEngine engine;
     private DatagramSocket mySocket;
 
-    public SSLServer() {
+    public DTLSServer() {
         try {
             this.mySocket = new DatagramSocket(3000);
         } catch (Exception e) {
@@ -32,17 +32,17 @@ public class SSLServer {
     // TODO: remove parameters since they are for the specific client. RETARDED
     public DatagramMessage receive(String hostName, int portNum) {
         try {
-            engine = SSLStuff.createSSLEngine(false);
+            engine = DTLS.createSSLEngine(false);
 
             InetSocketAddress clientSocketAddr = new InetSocketAddress(
                     InetAddress.getByName(hostName), portNum);
 
             // handshaking
-            DatagramMessage appData = SSLStuff.handshake(
+            DatagramMessage appData = DTLS.handshake(
                     engine, mySocket, clientSocketAddr, true);
 
             // write server application data
-        /*SSLStuff.sendAppData(engine, mySocket, serverApp.duplicate(),
+        /*DTLS.sendAppData(engine, mySocket, serverApp.duplicate(),
                 clientSocketAddr, "Server");*/
 
             if (appData == null) {
@@ -67,9 +67,9 @@ public class SSLServer {
             InetSocketAddress clientSocketAddr = new InetSocketAddress(
                     address, port);
 
-            //SSLStuff.handshake(this.engine, mySocket, clientSocketAddr, false);
+            //DTLS.handshake(this.engine, mySocket, clientSocketAddr, false);
 
-            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(message.getBytes()), clientSocketAddr, "Server");
+            DTLS.sendAppData(this.engine, mySocket, ByteBuffer.wrap(message.getBytes()), clientSocketAddr, "Server");
             System.out.println("SENT DATA");
         } catch (Exception e) {
             e.printStackTrace();
@@ -81,9 +81,9 @@ public class SSLServer {
             InetSocketAddress clientSocketAddr = new InetSocketAddress(
                     address, port);
 
-            //SSLStuff.handshake(this.engine, mySocket, clientSocketAddr, false);
+            //DTLS.handshake(this.engine, mySocket, clientSocketAddr, false);
 
-            SSLStuff.sendAppData(this.engine, mySocket, ByteBuffer.wrap(message), clientSocketAddr, "Server");
+            DTLS.sendAppData(this.engine, mySocket, ByteBuffer.wrap(message), clientSocketAddr, "Server");
             System.out.println("SENT DATA");
         } catch (Exception e) {
             e.printStackTrace();

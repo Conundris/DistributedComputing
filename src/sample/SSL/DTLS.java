@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
+ * Code Taken from: https://github.com/twosigma/OpenJDK/blob/master/test/jdk/javax/net/ssl/DTLS/DTLSOverDatagram.java
+ *
  * A SSLEngine usage example which simplifies the presentation
  * by removing the I/O and multi-threading concerns.
  *
@@ -51,7 +53,7 @@ import java.util.concurrent.Callable;
  */
 
 @SuppressWarnings("Duplicates")
-public class SSLStuff {
+public class DTLS {
 
     /*
      * The following is to set up the keystores.
