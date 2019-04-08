@@ -1,10 +1,9 @@
 package sample;
 
-import sample.SSL.SSLClient;
+import sample.SSL.DTLSClient;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
-import java.awt.image.ReplicateScaleFilter;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -18,9 +17,9 @@ import java.util.List;
  */
 @SuppressWarnings("Duplicates")
 public class Client {
-   private static final int DEFAULTPORT = 3000;
+   private static final int DEFAULTPORT = 3001;
    private static User user = new User();
-   private static SSLClient client = new SSLClient(DEFAULTPORT);
+   private static DTLSClient client = new DTLSClient(DEFAULTPORT);
 
    public static void main(String[] args) {
             InputStreamReader is = new InputStreamReader(System.in);
@@ -52,7 +51,7 @@ public class Client {
                System.out.println(serverResult);
             }
             // Main Menu
-            System.out.println("--------Enter your option-----------------" +
+            System.out.println("------ Main Menu - File System Management ------" +
                     "\n1. Logout" +
                     "\n2. Upload" +
                     "\n3. Download" +

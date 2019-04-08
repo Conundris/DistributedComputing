@@ -24,16 +24,4 @@ public enum ResponseCode {
     public static final short USER_FILES_ERROR = 702;
 
     public static final short COMMAND_UNRECOGNIZED = 900;
-
-    public static final short CANT_OPEN_DATA_CONNECTION = 425;
-
-
-
-    public static final short REQUESTED_FILE_ACTION_NOT_TAKEN = 450;
-
-
-
-    public static final short NOT_LOGGED_IN = 530;
-
-    public static final short REQUESTED_ACTION_NOT_TAKEN = 550;
 }

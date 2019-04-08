@@ -1,21 +1,14 @@
 package sample;
 
-import sample.SSL.SSLServer;
+import sample.SSL.DTLSServer;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.*;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.Scanner;
 
 /**
@@ -24,22 +17,6 @@ import java.util.Scanner;
  * communication.
  * A command-line argument is required to specify the server port.
  * @author M. L. Liu
- */
-/* Codes for responses
-Login success 500
-Login unsuccessful 501
-
-register success 600
-register unsuccessful 601
-
-logout succesfull 700
-logout unsuccceful 701
-
-upload success 800
-upload unsuccessful 801
-
-download success
-download unsuccessful
  */
 @SuppressWarnings("Duplicates")
 public class Server {
@@ -61,9 +38,7 @@ public class Server {
         populateUsers();
 
         try {
-            SSLServer server = new SSLServer();
-            // instantiates a datagram socket for both sending and receiving data
-            //MyServerDatagramSocket mySocket = new MyServerDatagramSocket(DEFAULTSERVERPORT);
+            DTLSServer server = new DTLSServer(DEFAULTSERVERPORT);
             System.out.println("File Management server ready.");
 
             while (true) {  // forever loop
@@ -93,12 +68,12 @@ public class Server {
 
                         System.out.println("Log in - server");
                         String loginResp = login(username, password);
-                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), loginResp);
+                        server.sendMessage(request.getAddress(), request.getPort(), loginResp);
                         break;
                     case RequestCode.LOGOUT:
                         System.out.println("Log Out - server");
                         String logoutResp = logout(username);
-                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), logoutResp);
+                        server.sendMessage(request.getAddress(), request.getPort(), logoutResp);
                         break;
                     case RequestCode.UPL:
                         System.out.println("Upload - server");
@@ -114,9 +89,9 @@ public class Server {
                             FileOutputStream fos = new FileOutputStream(DEFAULTFOLDERPATH + "\\" + username + "\\" + fileName);
                             fos.write(decodedBytes);
                             fos.close();
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.UPLOAD_SUCCESSFUL + ": File Uploaded successfully");
+                            server.sendMessage(request.getAddress(), request.getPort(), ResponseCode.UPLOAD_SUCCESSFUL + ": File Uploaded successfully");
                         } catch (Exception ex){
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.UPLOAD_NOT_SUCCESSFUL+ ": Error Uploading File");
+                            server.sendMessage(request.getAddress(), request.getPort(), ResponseCode.UPLOAD_NOT_SUCCESSFUL+ ": Error Uploading File");
                             ex.printStackTrace();
                         }
                         break;
@@ -132,9 +107,9 @@ public class Server {
 
                             encodedString = Base64.getEncoder().encodeToString(out.toByteArray());
 
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(),  ResponseCode.USER_FILES_LISTED + ": " + encodedString);
+                            server.sendMessage(request.getAddress(), request.getPort(),  ResponseCode.USER_FILES_LISTED + ": " + encodedString);
                         } catch(Exception e) {
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), String.valueOf(ResponseCode.USER_FILES_ERROR));
+                            server.sendMessage(request.getAddress(), request.getPort(), String.valueOf(ResponseCode.USER_FILES_ERROR));
                         }
                         break;
                     case RequestCode.DDL:
@@ -149,15 +124,15 @@ public class Server {
 
                             encodedString = Base64.getEncoder().encodeToString(Files.readAllBytes(path));
 
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), ResponseCode.DOWNLOAD_SUCCESSFUL + ": " + encodedString);
+                            server.sendMessage(request.getAddress(), request.getPort(), ResponseCode.DOWNLOAD_SUCCESSFUL + ": " + encodedString);
                         } catch(Exception e) {
-                            server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), String.valueOf(ResponseCode.DOWNLOAD_UNSUCCESSFUL));
+                            server.sendMessage(request.getAddress(), request.getPort(), String.valueOf(ResponseCode.DOWNLOAD_UNSUCCESSFUL));
                         }
                         break;
                     default:
                         System.out.println("An error occured!");
                         String resp = ResponseCode.COMMAND_UNRECOGNIZED + ": An error occured on the server try again";
-                        server.sendMessage(server.getEngine(), request.getAddress(), request.getPort(), resp);
+                        server.sendMessage(request.getAddress(), request.getPort(), resp);
                 }
             } //end while
         } // end try

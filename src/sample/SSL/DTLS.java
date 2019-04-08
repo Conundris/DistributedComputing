@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
+ * Code from: https://github.com/twosigma/OpenJDK/blob/master/test/jdk/javax/net/ssl/DTLS/DTLSOverDatagram.java
+ *
  * A SSLEngine usage example which simplifies the presentation
  * by removing the I/O and multi-threading concerns.
  *
@@ -51,13 +53,13 @@ import java.util.concurrent.Callable;
  */
 
 @SuppressWarnings("Duplicates")
-public class SSLStuff {
+public class DTLS {
 
     /*
      * The following is to set up the keystores.
      */
     private static final String pathToStores = "C:\\";
-    private static final String keyStoreFile = "nanithefuck.jks";
+    private static final String keyStoreFile = "keyStore.jks";
     private static final String trustStoreFile = "public.jks";
     private static final String passwd = "ittralee";
 
@@ -86,11 +88,11 @@ public class SSLStuff {
 
         char[] passphrase = passwd.toCharArray();
 
-        try (FileInputStream fis = new FileInputStream(keyFilename)) {
+        try (FileInputStream fis = new FileInputStream(keyStoreFile)) {
             ks.load(fis, passphrase);
         }
 
-        try (FileInputStream fis = new FileInputStream(trustFilename)) {
+        try (FileInputStream fis = new FileInputStream(trustStoreFile)) {
             ts.load(fis, passphrase);
         }
 
@@ -123,7 +125,6 @@ public class SSLStuff {
     // handshake
     public static DatagramMessage handshake(SSLEngine engine, DatagramSocket socket,
                                             SocketAddress peerAddr, boolean isServer) throws Exception {
-
         boolean endLoops = false;
         int loops = MAX_HANDSHAKE_LOOPS;
         List<DatagramPacket> packets = new ArrayList<>();
@@ -136,7 +137,6 @@ public class SSLStuff {
                 throw new RuntimeException(
                         "Too much loops to produce handshake packets");
             }
-
             // Handshake statuses
             // NEED_WRAP: must send data to the remote side before handshaking can continue
             // NEED_UNWRAP: needs to receive data from the remote side before handshaking can continue.
